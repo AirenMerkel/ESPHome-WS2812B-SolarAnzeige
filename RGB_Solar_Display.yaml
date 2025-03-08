@@ -15,49 +15,129 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    key: "abcxyz"
+    key: !secret encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret otaPass
 
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
 captive_portal:
-
+  
 
 sensor:
+
+  #pow Val
   - platform: homeassistant
     id: networkreference_power_ksem
     entity_id: sensor.networkreference_power_ksem
-#       - switch.turn_on: ${device_name}_on
         
   - platform: homeassistant
     id: gridfeed_power_ksem
     entity_id: sensor.gridfeed_power_ksem
-#        - switch.turn_on: ${device_name}_on
 
+  #AKKU soc
   - platform: homeassistant
     id: scb_8_5w_battery_soc
     entity_id: sensor.scb_8_5w_battery_soc
 
+  #AKKU Power
   - platform: homeassistant
     id: scb_8_5w_battery_power
     entity_id: sensor.scb_8_5w_battery_power
-#    on_value:
-#      then:
-#        - switch.turn_on: ${device_name}_on
 
-     
+  #8.5 AC Power
+  - platform: homeassistant
+    id: scb_8_5_g2_ac_power
+    entity_id: sensor.hostname_scb_8_5_g2_ac_power
+
+  #8.5 north Power
+  - platform: homeassistant
+    id: scb_8_5_g2_dc2_power
+    entity_id: sensor.hostname_scb_8_5_g2_dc2_power
+
+  #8.5 south Power
+  - platform: homeassistant
+    id: scb_8_5_g2_dc1_power
+    entity_id: sensor.hostname_scb_8_5_g2_dc1_power
+
+  #scb AC Power
+  - platform: homeassistant
+    id: scb_ac_power
+    entity_id: sensor.scb_ac_power
+
+  #scb left Power
+  - platform: homeassistant
+    id: scb_dc2_power
+    entity_id: sensor.scb_dc2_power
+
+  #scb right Power
+  - platform: homeassistant
+    id: scb_dc1_power
+    entity_id: sensor.scb_dc1_power
+
+  #energy production from pv month
+  - platform: homeassistant
+    id: scb_energy_yield_month
+    entity_id: sensor.scb_energy_yield_month
+  - platform: homeassistant
+    id: scb_8_5_energy_yield_month
+    entity_id: sensor.hostname_scb_8_5_g2_energy_yield_month
+
+  #energy consumption fom grid month 
+  - platform: homeassistant
+    id: scb_home_consumption_from_grid_month
+    entity_id: sensor.scb_home_consumption_from_grid_month
+
+  #energy consumption from PV month
+  - platform: homeassistant
+    id: scb_home_consumption_from_pv_month
+    entity_id: sensor.scb_home_consumption_from_pv_month
+  - platform: homeassistant
+    id: scb_8_5_g2_home_consumption_from_pv_month
+    entity_id: sensor.hostname_scb_8_5_g2_home_consumption_from_pv_month
+  - platform: homeassistant
+    id: scb_8_5_g2_home_consumption_from_battery_month
+    entity_id: sensor.hostname_scb_8_5_g2_home_consumption_from_battery_month
+
+  #energy yield year
+  - platform: homeassistant
+    id: scb_energy_yield_year
+    entity_id: sensor.scb_energy_yield_year
+  - platform: homeassistant
+    id: scb_8_5_energy_yield_year
+    entity_id: sensor.hostname_scb_8_5_g2_energy_yield_year
+
+  #energy consumption fom grid year 
+  - platform: homeassistant
+    id: scb_home_consumption_from_grid_year
+    entity_id: sensor.scb_home_consumption_from_grid_year
+
+  #energy consumption from PV year
+  - platform: homeassistant
+    id: scb_home_consumption_from_pv_year
+    entity_id: sensor.scb_home_consumption_from_pv_year
+  - platform: homeassistant
+    id: scb_8_5_g2_home_consumption_from_pv_year
+    entity_id: sensor.hostname_scb_8_5_g2_home_consumption_from_pv_year
+  - platform: homeassistant
+    id: scb_8_5_g2_home_consumption_from_battery_year
+    entity_id: sensor.hostname_scb_8_5_g2_home_consumption_from_battery_year
+
 
 light:
   - platform: neopixelbus
     variant: WS2811
     pin: D1  #  SD Pin
-    num_leds: 176
+    num_leds: 480
     name: "RGB Solar Anzeige"
     effects:
       - addressable_lambda:
           name: "My Custom Effect"
-          update_interval: 5s
+          update_interval: 2s
 
           lambda: |-
             // it.size() - Number of LEDs
@@ -83,22 +163,69 @@ light:
               {0,0,1,1,0,1,0,0}  // digit minus eins
             };  
 
-            //AC 8,5 Nord; AC8,5 KW; AKKU Watt; Akku%; IN/OUT;
-            int ranges[5] = {4,5,5,3,6};
-
-            int power[6] = {10,10,10,10,10,10};
+            //beginning off each section
+            /*
+              pow Val                 | 6 * 8 + last =>  432 - 480 | 168 -> 216
+              AKKU soc                | 3 * 8 + last =>  408 - 463 | 144
+              AKKU Power              | 5 * 8 + last =>  368 - 464 | 104
+              8.5 AC Power            | 5 * 8 + last =>  328 - 423 |  64
+              8.5 North Power         | 4 * 8 + last =>  296 - 383 |  32
+              8.5 South Power         | 4 * 8 + last =>  264 - 351 |   0
+              3 AC Power              | 4 * 8 + last =>  232 - 287
+              3 Left Power            | 4 * 8 + last =>  200 - 255
+              3 Right Power           | 4 * 8 + last =>  168 - 223
+              -----------------------------------------------------
+              Month production        | 3 * 8 + last =>  144 - 191
+              Month pv consumption    | 3 * 8 + last =>  120 - 167
+              Month grid consumption  | 3 * 8 + last =>   96 - 143
+              Year production         | 4 * 8 + last =>   64 - 119
+              Year pv consumption     | 4 * 8 + last =>   32 -  79
+              Year grid consumption   | 4 * 8        =>    0 -  39 
+                                       64 Segments
+                                       512 RGB LEDs
+                                       15 Categories
+             */
+            int ranges[14] =  {32,64,96,120,144,168,200,232,264,296,328,368,408,432};//{0, 1,2,3,4,5,6,7,0,32,64,104,144,168};//{40, 80, 120, 144, 168, 192, 224, 256, 296, 328, 360, 400, 440, 464};
+            
+            int power[6] = {0,10,10,10,10,10};
             bool powtogrid = false;
-            int batery[3] = {10,10,10};
-            int bateryPower[5] = {10,10,10,10,10};
+            int batery[3] = {0,10,10};
+            int bateryPower[5] = {0,10,10,10,10};
             bool powtobat = false;
+            int acPowerScb85[5] = {0,10,10,10,10};
+            bool powtoac = false;
+            int northPowerScb85[4] = {0,10,10,10};
+            int southPowerScb85[4] = {0,10,10,10};
+            int acPowerScb3[4] = {0,10,10,10};
+            int leftPowerScb3[4] = {0,10,10,10};
+            int rightPowerScb3[4] = {0,10,10,10};
+            int energyYieldMonth[3] = {0,10,10};
+            int homeConsumptionFromGridMonth[3] = {0,10,10};
+            int homeConsumptionFromPvMonth[3] = {0,10,10};
+            int energyYieldYear[4] = {0,10,10,10};
+            int homeConsumptionFromGridYear[4] = {0,10,10,10};
+            int homeConsumptionFromPvYear[4] = {0,10,10,10};
 
             //////////////////////get Values///////////////////////////
             
-            int powerVal = id(networkreference_power_ksem).state;
-            int battery_load = id(scb_8_5w_battery_soc).state;
-            int battery_power = id(scb_8_5w_battery_power).state;
+            int powerVal            = id(networkreference_power_ksem).state;
+            int battery_soc         = id(scb_8_5w_battery_soc).state;
+            int battery_power       = id(scb_8_5w_battery_power).state;
+            int scb_8_5_ac_power    = id(scb_8_5_g2_ac_power).state;
+            int scb_8_5_north_power = id(scb_8_5_g2_dc2_power).state;
+            int scb_8_5_south_power = id(scb_8_5_g2_dc1_power).state;
+            int scb_3_ac_power      = id(scb_ac_power).state;
+            int scb_3_left_power    = id(scb_dc2_power).state;
+            int scb_3_right_power   = id(scb_dc1_power).state;
 
-            printf("\t\tIN/OUT: %i; battery_load: %i; battery_power: %i;\n", powerVal < 0 ? -1 * (int) id(gridfeed_power_ksem).state : powerVal, battery_load, battery_power);
+            int energy_yield_month = id(scb_energy_yield_month).state + id(scb_8_5_energy_yield_month).state;
+            int home_consumption_from_grid_month = id(scb_home_consumption_from_grid_month).state;
+            int home_consumption_from_pv_month = id(scb_home_consumption_from_pv_month).state + id(scb_8_5_g2_home_consumption_from_pv_month).state + id(scb_8_5_g2_home_consumption_from_battery_month).state;
+
+            int energy_yield_year = id(scb_energy_yield_year).state + id(scb_8_5_energy_yield_year).state;
+            int home_consumption_from_grid_year = id(scb_home_consumption_from_grid_year).state;
+            int home_consumption_from_pv_year = id(scb_home_consumption_from_pv_year).state + id(scb_8_5_g2_home_consumption_from_pv_year).state + id(scb_8_5_g2_home_consumption_from_battery_year).state;
+
 
             ////////////////////////pow Val///////////////////////////
             if(powerVal <= 0){
@@ -120,13 +247,17 @@ light:
                 powerVal = powerVal / 10;
               } 
             }
+            
+
+
             ////////////////////////batery load///////////////////////////
             for(int i = 0; i < 3; i++){
-              if (battery_load > 0) {
-                batery[i] = (int) battery_load % 10;
-                battery_load = battery_load / 10;
+              if (battery_soc > 0) {
+                batery[i] = (int) battery_soc % 10;
+                battery_soc = battery_soc / 10;
               }
             }
+
             ////////////////////////bat Power///////////////////////////
             if(battery_power < 0){
               battery_power = -battery_power;
@@ -146,68 +277,324 @@ light:
                 bateryPower[i] = (int) battery_power % 10;
                 battery_power = battery_power / 10;
               }
+            } 
+
+            ////////////////////////8.5 AC Power///////////////////////////
+            
+            if(scb_8_5_ac_power < 0){
+              scb_8_5_ac_power = -scb_8_5_ac_power;
+              powtoac = true;
+            }
+            for(int i=0; i < 5; i++){
+              if (scb_8_5_ac_power == 0 ) {
+                if(powtoac){
+                  acPowerScb85[i] = 11;
+                } else{
+                  acPowerScb85[i] = 10;
+                }
+                break;
+              }
+              if (scb_8_5_ac_power > 0) {
+                acPowerScb85[i] = (int) scb_8_5_ac_power % 10;
+                scb_8_5_ac_power = scb_8_5_ac_power / 10;
+              }
             }
 
+            ////////////////////////8.5 North Power///////////////////////////
+            if(scb_8_5_north_power < 0){
+              scb_8_5_north_power = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (scb_8_5_north_power > 0) {
+                northPowerScb85[i] = (int) scb_8_5_north_power % 10;
+                scb_8_5_north_power = scb_8_5_north_power / 10;
+              }
+            }
 
+            /////////////////////////8.5 South Power//////////////////////////
+            if(scb_8_5_south_power < 0){
+              scb_8_5_south_power = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (scb_8_5_south_power > 0) {
+                southPowerScb85[i] = (int) scb_8_5_south_power % 10;
+                scb_8_5_south_power = scb_8_5_south_power / 10;
+              }
+            }
 
-
-
-
-
-            ///////////////////////display Power///////////////////////////
+            /////////////////////////3 AC Power//////////////////////////
+            if(scb_3_ac_power < 0){
+              scb_3_ac_power = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (scb_3_ac_power > 0) {
+                acPowerScb3[i] = (int) scb_3_ac_power % 10;
+                scb_3_ac_power = scb_3_ac_power / 10;
+              }
+            }
             
-            bool displayPower[8*6];
+            /////////////////////////3 left Power//////////////////////////
+            if(scb_3_left_power < 0){
+              scb_3_left_power = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (scb_3_left_power > 0) {
+                leftPowerScb3[i] = (int) scb_3_left_power % 10;
+                scb_3_left_power = scb_3_left_power / 10;
+              }
+            }
+            
+            /////////////////////////3 right Power//////////////////////////
+            if(scb_3_right_power < 0){
+              scb_3_right_power = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (scb_3_right_power > 0) {
+                rightPowerScb3[i] = (int) scb_3_right_power % 10;
+                scb_3_right_power = scb_3_right_power / 10;
+              }
+            }
 
+            /////////////////////////energy yield Month//////////////////////////
+            if(energy_yield_month < 0){
+              energy_yield_month = 0;
+            }
+            for(int i=0; i < 3; i++){
+              if (energy_yield_month > 0) {
+                energyYieldMonth[i] = (int) energy_yield_month % 10;
+                energy_yield_month = energy_yield_month / 10;
+              }
+            }
+
+            /////////////////////////home consumption from grid Month//////////////////////////
+            if(home_consumption_from_grid_month < 0){
+              home_consumption_from_grid_month = 0;
+            }
+            for(int i=0; i < 3; i++){
+              if (home_consumption_from_grid_month > 0) {
+                homeConsumptionFromGridMonth[i] = (int) home_consumption_from_grid_month % 10;
+                home_consumption_from_grid_month = home_consumption_from_grid_month / 10;
+              }
+            }
+
+            /////////////////////////home consumption from PV Month//////////////////////////
+            if(home_consumption_from_pv_month < 0){
+              home_consumption_from_pv_month = 0;
+            }
+            for(int i=0; i < 3; i++){
+              if (home_consumption_from_pv_month > 0) {
+                homeConsumptionFromPvMonth[i] = (int) home_consumption_from_pv_month % 10;
+                home_consumption_from_pv_month = home_consumption_from_pv_month / 10;
+              }
+            }
+
+            /////////////////////////energy yield Year//////////////////////////
+            if(energy_yield_year < 0){
+              energy_yield_year = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (energy_yield_year > 0) {
+                energyYieldYear[i] = (int) energy_yield_year % 10;
+                energy_yield_year = energy_yield_year / 10;
+              }
+            }
+
+            /////////////////////////home consumption from grid Year//////////////////////////
+            if(home_consumption_from_grid_year < 0){
+              home_consumption_from_grid_year = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (home_consumption_from_grid_year > 0) {
+                homeConsumptionFromGridYear[i] = (int) home_consumption_from_grid_year % 10;
+                home_consumption_from_grid_year = home_consumption_from_grid_year / 10;
+              }
+            }
+            
+            /////////////////////////home consumption from PV Year//////////////////////////
+            if(home_consumption_from_pv_year < 0){
+              home_consumption_from_pv_year = 0;
+            }
+            for(int i=0; i < 4; i++){
+              if (home_consumption_from_pv_year > 0) {
+                homeConsumptionFromPvYear[i] = (int) home_consumption_from_pv_year % 10;
+                home_consumption_from_pv_year = home_consumption_from_pv_year / 10;
+              }
+            }
+
+            ///////////////////////////////////////////////////////////////
+            ///////////////////////display Power///////////////////////////
+            ///////////////////////////////////////////////////////////////
+            bool displayPower[8*6];
             for(int i=0; i < 6; i++){
-              //printf("\npower %d\n\t\t", power[i]);
               for(int j = 0; j < 8; j++){
                 displayPower[(i*8)+j] = ledSegments[power[i]][7-j];
-                //printf("%d", ledSegments[power[i]][7-j]);
 
               }
             }
             
             bool displayBatLoad[8*3];
-            
             for(int i=0; i < 3; i++){
-              //printf("\nbatery %d\n\t\t", batery[i]);
               for(int j = 0; j < 8; j++){
                 displayBatLoad[(i*8)+j] = ledSegments[batery[i]][7-j];
-                //printf("%d", ledSegments[batery[i]][7-j]);
               }
             }
 
             bool displayBateryPower[8*5];
-
             for(int i=0; i < 5; i++){
-              //printf("\nbatery power %d\n\t\t", bateryPower[i]);
               for(int j = 0; j < 8; j++){
                 displayBateryPower[(i*8)+j] = ledSegments[bateryPower[i]][7-j];
-                //printf("%d", ledSegments[bateryPower[i]][7-j]);
+              }
+            }
+            
+            bool display8_5ac[8*5];
+            for(int i=0; i < 5; i++){
+              for(int j = 0; j < 8; j++){
+                display8_5ac[(i*8)+j] = ledSegments[acPowerScb85[i]][7-j];
               }
             }
 
+            bool displayNorth[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayNorth[(i*8)+j] = ledSegments[northPowerScb85[i]][7-j];
+              }
+            }
 
+            bool displaySouth[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displaySouth[(i*8)+j] = ledSegments[southPowerScb85[i]][7-j];
+              }
+            }
 
+            bool displayAC[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayAC[(i*8)+j] = ledSegments[acPowerScb3[i]][7-j];
+              }
+            }
 
+            bool displayLeft[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayLeft[(i*8)+j] = ledSegments[leftPowerScb3[i]][7-j];
+              }
+            }
 
+            bool displayRight[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayRight[(i*8)+j] = ledSegments[rightPowerScb3[i]][7-j];
+              }
+            }
 
+            bool displayEnergyYieldMonth[8*3];
+            for(int i=0; i < 3; i++){
+              for(int j = 0; j < 8; j++){
+                displayEnergyYieldMonth[(i*8)+j] = ledSegments[energyYieldMonth[i]][7-j];
+              }
+            }
+
+            bool displayHomeConsumptionFromGridMonth[8*3];
+            for(int i=0; i < 3; i++){
+              for(int j = 0; j < 8; j++){
+                displayHomeConsumptionFromGridMonth[(i*8)+j] = ledSegments[homeConsumptionFromGridMonth[i]][7-j];
+              }
+            }
+
+            bool displayHomeConsumptionFromPvMonth[8*3];
+            for(int i=0; i < 3; i++){
+              for(int j = 0; j < 8; j++){
+                displayHomeConsumptionFromPvMonth[(i*8)+j] = ledSegments[homeConsumptionFromPvMonth[i]][7-j];
+              }
+            }
+
+            bool displayEnergyYieldYear[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayEnergyYieldYear[(i*8)+j] = ledSegments[energyYieldYear[i]][7-j];
+              }
+            }
+
+            bool displayHomeConsumptionFromGridYear[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayHomeConsumptionFromGridYear[(i*8)+j] = ledSegments[homeConsumptionFromGridYear[i]][7-j];
+              }
+            }
+
+            bool displayHomeConsumptionFromPvYear[8*4];
+            for(int i=0; i < 4; i++){
+              for(int j = 0; j < 8; j++){
+                displayHomeConsumptionFromPvYear[(i*8)+j] = ledSegments[homeConsumptionFromPvYear[i]][7-j];
+              }
+            }
+
+            
             ///////////////////////display All////////////////////////////
+            int it_size = (it.size() - 1);
+            for (int i = (it.size() - 1); i >= 0; i--) {
+              if(i >= ranges[13]){
+                it[i] = displayPower[it_size - i] ? Color(200, 0, 0) : Color::BLACK; 
+                //printf("[1]\t(%i; %i): [%i, %i, %i]\n", i, (it_size - i), it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[12]){
+                it[i] = displayBatLoad[(ranges[13]-1) -i] ? Color(200, 0, 0) : Color::BLACK; 
+                //printf("[2]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[13]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[11]){
+                it[i] = displayBateryPower[(ranges[12]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[3]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[12]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[10]){
+                it[i] = display8_5ac[(ranges[11]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[4]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[11]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[9]){
+                it[i] = displayNorth[(ranges[10]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[5]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[10]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[8]){
+                it[i] = displaySouth[(ranges[9]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[6]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[9]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[7]){
+                it[i] = displayAC[(ranges[8]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[7]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[8]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[6]){
+                it[i] = displayLeft[(ranges[7]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[8]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[7]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[5]){
+                it[i] = displayRight[(ranges[6]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[9]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[6]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[4]){
+                it[i] = displayEnergyYieldMonth[(ranges[5]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[10]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[5]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[3]){
+                it[i] = displayHomeConsumptionFromPvMonth[(ranges[4]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[11]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[4]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[2]){
+                it[i] = displayHomeConsumptionFromGridMonth[(ranges[3]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[12]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[3]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[1]){
+                it[i] = displayEnergyYieldYear[(ranges[2]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[13]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[2]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
+              else if(i >= ranges[0]){
+                it[i] = displayHomeConsumptionFromPvYear[(ranges[1]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[14]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[1]-1) -i, it[i].get()[
+              }
+              else{
+                it[i] = displayHomeConsumptionFromGridYear[(ranges[0]-1) -i] ? Color(200, 0, 0) : Color::BLACK;
+                //printf("[15]\t(%i; %i): [%i, %i, %i]\n", i, (ranges[0]-1) -i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
+              }
 
-            for (int i = (it.size() - 1); i > 0; i--) {
-              if(i > (it.size() - 1 - (ranges[4] * 8))){
-                it[i] = displayPower[ (it.size() - 1)-i] ? Color(250, 0, 0) : Color::BLACK; 
-                //printf("(%i; %i): [%i, %i, %i]\n", i,  (it.size() - 1)-i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
-              }
-              else if(i > (it.size() - 1 - ((ranges[3] + ranges[4]) * 8))){
-                it[i] = displayBatLoad[ (it.size() - 1 - (ranges[4] * 8))-i] ? Color(0, 250, 0) : Color::BLACK; 
-                //printf("(%i; %i): [%i, %i, %i]\n", i,  (it.size() - 1 - (ranges[4] * 8)) - i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
-                //printf("(%i; %i)\n", i,  (it.size() - 1 - (ranges[4] * 8)) - i );
-              }
-              else if(i > (it.size() - 1 - ((ranges[2]+(ranges[3] + ranges[4])) * 8))){
-                it[i] = displayBateryPower[ (it.size() - 1 - ((ranges[3] + ranges[4]) * 8))-i] ? Color(0, 0, 250) : Color::BLACK;
-                //printf("(%i; %i): [%i, %i, %i]\n", i,  (it.size() - 1 - ((ranges[3] + ranges[4]) * 8))-i, it[i].get()[0], it[i].get()[1], it[i].get()[2]);
-                //printf("(%i; %i)\n", i,  (it.size() - 1 - ((ranges[3] + ranges[4]) * 8))-i);
-              }
+
             }
 
